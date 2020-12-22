@@ -27,8 +27,8 @@ from mne.decoding import (SlidingEstimator, GeneralizingEstimator, Scaler,
                           cross_val_multiscore, LinearModel, get_coef,
                           Vectorizer, CSP)
 
-
-EXP_NAME = "Or_1_raw.fif"
+DATA_PATH = "data/"
+EXP_NAME = DATA_PATH+"Yoel_2_raw.fif" ## file name to run the anaylsis on
 
 features = ['app_entropy', 'decorr_time', 'higuchi_fd',
             'hjorth_complexity', 'hjorth_complexity_spect', 'hjorth_mobility',
@@ -100,11 +100,13 @@ def train_mne_feature(data,labels,raw):
     # Best parameters obtained with GridSearchCV:
     print(gs.best_params_)
     
-    gs_best = gs.best_estimator_
-    new_scores = cross_val_score(gs_best, data, y, cv=skf)
+    
+    #: run the best model maybe need to create test seprate dataset
+    # gs_best = gs.best_estimator_
+    # new_scores = cross_val_score(gs_best, data, y, cv=skf)
 
-    print('Cross-validation accuracy score (with optimized parameters) = %1.3f '
-          '(+/- %1.5f)' % (np.mean(new_scores), np.std(new_scores)))
+    # print('Cross-validation accuracy score (with optimized parameters) = %1.3f '
+    #       '(+/- %1.5f)' % (np.mean(new_scores), np.std(new_scores)))
     
     return pipe
 def main():

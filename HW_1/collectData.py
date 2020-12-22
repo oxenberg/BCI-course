@@ -18,14 +18,16 @@ TIME_BETWEEN_EVENTS_RATE = SAMPLE_RATE*TIME_BETWEEN_EVENTS
 
 uVolts_per_count = (4500000)/24/(2**23-1) #uV/count
 
-EXP_NAME = "Or_1_raw.fif"
+
+DATA_PATH = "data/"
+EXP_NAME = DATA_PATH+"Or_2_raw.fif" #: give name to the expirement
 
 
-EXPERIMENT_DURATION = 600
+EXPERIMENT_DURATION = 500
 ITER = {"COUNT" : 0} #for cout the time 
 ACTIONS = {1 : "LEFT",2 : "RIGHT",3 : "NONE"}
 
-RUN_EXP = False
+RUN_EXP = False #: to collect data change to true 
 if RUN_EXP:
     board = OpenBCICyton(port='COM3', daisy=True)
 start_time = time.time()
