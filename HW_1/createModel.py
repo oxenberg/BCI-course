@@ -28,7 +28,7 @@ from mne.decoding import (SlidingEstimator, GeneralizingEstimator, Scaler,
                           Vectorizer, CSP)
 
 DATA_PATH = "data/"
-EXP_NAME = DATA_PATH+"Yoel_2_raw.fif" ## file name to run the anaylsis on
+EXP_NAME = DATA_PATH+"Or_3_raw.fif" ## file name to run the anaylsis on
 
 features = ['app_entropy', 'decorr_time', 'higuchi_fd',
             'hjorth_complexity', 'hjorth_complexity_spect', 'hjorth_mobility',
@@ -39,13 +39,16 @@ features = ['app_entropy', 'decorr_time', 'higuchi_fd',
             'variance', 'wavelet_coef_energy', 'zero_crossings', 'max_cross_corr',
             'nonlin_interdep', 'phase_lock_val', 'spect_corr', 'time_corr']
 
+selected_features = ["std","mean","kurtosis","skewness"] # can be cgahnged to any feature
+
+
 def preprocess():
 
-    tmin, tmax = -1., 4.
+    tmin, tmax = -1., 0.8 #: need to check the best
     
     raw = mne.io.read_raw_fif(EXP_NAME, preload=True)
     
-    raw.filter(7., 40., fir_design='firwin', skip_by_annotation='edge')
+    raw.filter(5., 40., fir_design='firwin', skip_by_annotation='edge')
     
     events = mne.find_events(raw, 'STI')
     
@@ -61,33 +64,16 @@ def preprocess():
 
     return epochs,raw
 
-def trainCSP_LDA(epochs_data_train,labels,cv):
-    # Assemble a classifier
-    lda = LinearDiscriminantAnalysis()
-    csp = CSP(n_components=14, reg=None, log=True, norm_trace=False)
-    
-    # Use scikit-learn Pipeline with cross_val_score function
-    clf = Pipeline([('CSP', csp), ('LDA', lda)])
-    scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
-    
-    # Printing the results
-    class_balance = np.mean(labels == labels[0])
-    class_balance = max(class_balance, 1. - class_balance)
-    print("Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
-                                                              class_balance))
 
 def train_mne_feature(data,labels,raw):
-    pipe = Pipeline([('fe', FeatureExtractor(sfreq=raw.info['sfreq'],
-                                         selected_funcs=["std","app_entropy",
-                                                         "mean",
-                                                         "kurtosis",
-                                                         "max_cross_corr"])),
+    pipe = Pipeline([('fe', FeatureExtractor(sfreq = raw.info['sfreq'],
+                                         selected_funcs = selected_features)),
                  ('scaler', StandardScaler()),
                  ('clf', GradientBoostingClassifier())])
-    skf = StratifiedKFold(n_splits=5, random_state=42)
     y = labels
     
-    params_grid = {'fe__app_entropy__emb': np.arange(2, 5)}
+    # params_grid = {'fe__app_entropy__emb': np.arange(2, 5)} #: can addd gradinet boost hyperparametrs
+    params_grid = {} #: can addd gradinet boost hyperparametrs
 
     gs = GridSearchCV(estimator=pipe, param_grid=params_grid,
                       cv=StratifiedKFold(n_splits=5, random_state=42), n_jobs=1,
@@ -109,6 +95,10 @@ def train_mne_feature(data,labels,raw):
     #       '(+/- %1.5f)' % (np.mean(new_scores), np.std(new_scores)))
     
     return pipe
+
+    
+    
+
 def main():
     epochs,raw =  preprocess()
     
@@ -116,17 +106,17 @@ def main():
 
     # get MEG and EEG data
     epochs_data_train = epochs.get_data()
-    
-    cv = ShuffleSplit(10, test_size=0.2, random_state=42)
-    
-    # trainCSP_LDA(epochs_data_train,labels,cv)
-    
+            
     pipe = train_mne_feature(epochs_data_train,labels,raw)
     
-    return pipe
+    transformed_data = pipe["fe"].fit_transform(epochs_data_train) #: transformed_data is matrix dim by the featuhers X events
+    
+    
+    return pipe,epochs_data_train
 
 if __name__ == '__main__':
-    pipe = main()
+    pipe,epochs_data_train = main()
+    
 
 
 
